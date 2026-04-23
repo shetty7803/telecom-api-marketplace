@@ -1,6 +1,6 @@
 # 📡 Telecom API Marketplace
 
-> **Enterprise-grade API management platform** for MVNO (Mobile Virtual Network Operator) partners — built on WSO2 API Manager 4.6, WSO2 Micro Integrator, Docker, and Node.js.
+> **Enterprise-grade API management platform** for MVNO (Mobile Virtual Network Operator) partners — built on WSO2 API Manager 4.6, Docker, and Node.js.
 
 ---
 
