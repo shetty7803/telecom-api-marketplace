@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Plan Service SOAP Endpoint
+  Points to Node.js plan-service SOAP endpoint
+  WSO2 MI calls this when transforming plan requests
+-->
+<endpoint name="PlanServiceSOAPEndpoint"
+          xmlns="http://ws.apache.org/ns/synapse">
+  <address uri="http://plan-service:9091/soap/plans">
+    <suspendOnFailure>
+      <initialDuration>3000</initialDuration>
+      <progressionFactor>1.5</progressionFactor>
+      <maximumDuration>60000</maximumDuration>
+    </suspendOnFailure>
+    <markForSuspension>
+      <retriesBeforeSuspension>3</retriesBeforeSuspension>
+      <retryDelay>1000</retryDelay>
+    </markForSuspension>
+    <timeout>
+      <duration>10000</duration>
+      <responseAction>fault</responseAction>
+    </timeout>
+  </address>
+</endpoint>

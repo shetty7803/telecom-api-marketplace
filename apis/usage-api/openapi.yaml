@@ -1,0 +1,197 @@
+openapi: 3.0.3
+info:
+  title: Telecom Usage API
+  description: |
+    Provides subscriber usage data (data, voice, SMS) and billing summaries
+    for MVNO partners to drive accurate invoicing and self-care applications.
+  version: 1.0.0
+servers:
+  - url: https://localhost:8243/telecom/usage/v1
+    description: APIM Gateway (local)
+security:
+  - OAuth2: [usage:read]
+tags:
+  - name: Usage
+    description: Subscriber usage and billing operations
+paths:
+  /usage/{subscriberId}:
+    get:
+      summary: Get usage for a subscriber
+      operationId: getSubscriberUsage
+      tags: [Usage]
+      parameters:
+        - name: subscriberId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: SUB-001
+        - name: month
+          in: query
+          description: Billing period (YYYY-MM). Defaults to current month.
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}$'
+            example: "2024-04"
+      responses:
+        '200':
+          description: Subscriber usage data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubscriberUsage'
+              example:
+                subscriberId: SUB-001
+                planId: P003
+                billingPeriod: "2024-04"
+                dataUsedGB: 6.5
+                dataLimitGB: 10
+                dataUsedPct: 65.0
+                voiceMinutesUsed: 87
+                voiceMinutesLimit: 200
+                smsUsed: 234
+                smsLimit: 1000
+                currentChargesUSD: 4.57
+                status: normal
+                lastUpdated: "2024-04-21T10:00:00Z"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /usage/summary:
+    get:
+      summary: Get usage summary across subscribers
+      operationId: getUsageSummary
+      tags: [Usage]
+      security:
+        - OAuth2: [usage:read]
+      parameters:
+        - name: partnerId
+          in: query
+          schema: { type: string, example: mvno-a }
+        - name: month
+          in: query
+          schema: { type: string, example: "2024-04" }
+        - name: planId
+          in: query
+          schema: { type: string, example: P003 }
+      responses:
+        '200':
+          description: Aggregated usage summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageSummaryResponse'
+
+  /usage/export:
+    get:
+      summary: Export usage records for billing
+      operationId: exportUsage
+      tags: [Usage]
+      security:
+        - OAuth2: [usage:export]
+      parameters:
+        - name: partnerId
+          in: query
+          schema: { type: string }
+        - name: month
+          in: query
+          schema: { type: string }
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [json, csv]
+            default: json
+      responses:
+        '200':
+          description: Usage export (JSON or CSV)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total: { type: integer }
+                  records:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SubscriberUsage'
+            text/csv:
+              schema:
+                type: string
+
+components:
+  schemas:
+    SubscriberUsage:
+      type: object
+      properties:
+        subscriberId: { type: string }
+        planId: { type: string }
+        billingPeriod: { type: string }
+        dataUsedGB: { type: number }
+        dataLimitGB: { type: number }
+        dataUsedPct: { type: number }
+        voiceMinutesUsed: { type: integer }
+        voiceMinutesLimit: { type: integer }
+        smsUsed: { type: integer }
+        smsLimit: { type: integer }
+        currentChargesUSD: { type: number }
+        lastUpdated: { type: string, format: date-time }
+        status:
+          type: string
+          enum: [normal, near-limit, over-limit]
+
+    UsageSummaryResponse:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            totalSubscribers: { type: integer }
+            billingPeriod: { type: string }
+            totalDataUsedGB: { type: number }
+            totalVoiceMinutes: { type: integer }
+            totalSMS: { type: integer }
+            totalChargesUSD: { type: number }
+            nearLimitCount: { type: integer }
+            generatedAt: { type: string, format: date-time }
+        subscribers:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubscriberUsage'
+
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+
+  responses:
+    Unauthorized:
+      description: Invalid or missing token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Insufficient scope
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Subscriber not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://localhost:9444/oauth2/token
+          scopes:
+            usage:read: Read subscriber usage data
+            usage:export: Export usage records for billing

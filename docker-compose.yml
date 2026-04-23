@@ -1,0 +1,110 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Telecom API Marketplace — Docker Compose
+#
+# WHAT RUNS HERE (Docker):
+#   - MySQL         (database for WSO2 APIM)
+#   - plan-service  (Node.js :9091)
+#   - network-service (Node.js :9092)
+#   - usage-service (Node.js :9093)
+#
+# WHAT RUNS IN WSL (NOT Docker):
+#   - WSO2 APIM 4.6  →  cd /mnt/c/WSO2/wso2am-4.6.0/bin && ./api-manager.sh start
+#   - WSO2 MI 4.3    →  cd /mnt/c/WSO2/wso2mi-4.3.0/bin && ./micro-integrator.sh start
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── MySQL ────────────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: telecom-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: apim_db
+      MYSQL_USER: apim_user
+      MYSQL_PASSWORD: apim_pass
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./scripts/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - telecom-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot123"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  # ── Plan Service (Node.js) ───────────────────────────────────────────────────
+  plan-service:
+    build:
+      context: ./backends/plan-service
+      dockerfile: Dockerfile
+    container_name: telecom-plan-service
+    ports:
+      - "9091:9091"
+    environment:
+      - PORT=9091
+      - NODE_ENV=production
+    networks:
+      - telecom-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9091/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  # ── Network Service (Node.js) ────────────────────────────────────────────────
+  network-service:
+    build:
+      context: ./backends/network-service
+      dockerfile: Dockerfile
+    container_name: telecom-network-service
+    ports:
+      - "9092:9092"
+    environment:
+      - PORT=9092
+      - NODE_ENV=production
+    networks:
+      - telecom-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9092/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  # ── Usage Service (Node.js) ──────────────────────────────────────────────────
+  usage-service:
+    build:
+      context: ./backends/usage-service
+      dockerfile: Dockerfile
+    container_name: telecom-usage-service
+    ports:
+      - "9093:9093"
+    environment:
+      - PORT=9093
+      - NODE_ENV=production
+    networks:
+      - telecom-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9093/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+networks:
+  telecom-net:
+    driver: bridge
+    name: telecom-network
+
+volumes:
+  mysql-data:

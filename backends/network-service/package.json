@@ -1,0 +1,9 @@
+{
+  "name": "network-service",
+  "version": "1.0.0",
+  "description": "Telecom Network Status API - mock backend service",
+  "main": "index.js",
+  "scripts": { "start": "node index.js" },
+  "dependencies": { "express": "^4.18.2" },
+  "engines": { "node": ">=20.0.0" }
+}

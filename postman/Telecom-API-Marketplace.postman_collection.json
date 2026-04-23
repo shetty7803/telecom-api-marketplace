@@ -1,0 +1,307 @@
+{
+  "info": {
+    "name": "Telecom API Marketplace",
+    "description": "Complete test suite for the WSO2-based Telecom API Marketplace.\nIncludes token generation, all 3 APIs, security tests, and error cases.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "telecom-api-marketplace-v1"
+  },
+  "variable": [
+    { "key": "IS_URL",        "value": "https://localhost:9444" },
+    { "key": "GW_URL",        "value": "https://localhost:8243" },
+    { "key": "APIM_URL",      "value": "https://localhost:9443" },
+    { "key": "CLIENT_ID",     "value": "REPLACE_WITH_YOUR_CLIENT_ID" },
+    { "key": "CLIENT_SECRET", "value": "REPLACE_WITH_YOUR_CLIENT_SECRET" },
+    { "key": "ACCESS_TOKEN",  "value": "" }
+  ],
+  "item": [
+
+    {
+      "name": "0. Auth — Get Access Token",
+      "item": [
+        {
+          "name": "Get OAuth2 Token (client_credentials)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has access_token', () => pm.expect(body.access_token).to.be.a('string'));",
+                  "pm.test('Token type is Bearer', () => pm.expect(body.token_type).to.eql('Bearer'));",
+                  "pm.collectionVariables.set('ACCESS_TOKEN', body.access_token);",
+                  "console.log('Token expires in:', body.expires_in, 'seconds');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{IS_URL}}/oauth2/token",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type",    "value": "client_credentials" },
+                { "key": "client_id",     "value": "{{CLIENT_ID}}" },
+                { "key": "client_secret", "value": "{{CLIENT_SECRET}}" },
+                { "key": "scope",         "value": "plan:read network:read usage:read usage:export" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "1. Plan API",
+      "item": [
+        {
+          "name": "GET /plans — All plans",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has plans array', () => pm.expect(body.plans).to.be.an('array'));",
+                  "pm.test('Plans count > 0', () => pm.expect(body.total).to.be.above(0));",
+                  "pm.test('Has pagination fields', () => {",
+                  "  pm.expect(body.total).to.be.a('number');",
+                  "  pm.expect(body.count).to.be.a('number');",
+                  "  pm.expect(body.offset).to.be.a('number');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{GW_URL}}/telecom/plan/v1/plans",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }]
+          }
+        },
+        {
+          "name": "GET /plans?type=wholesale — Filter by type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('All plans are wholesale type', () => {",
+                  "  body.plans.forEach(p => pm.expect(p.type).to.eql('wholesale'));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{GW_URL}}/telecom/plan/v1/plans?type=wholesale", "query": [{ "key": "type", "value": "wholesale" }] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }]
+          }
+        },
+        {
+          "name": "GET /plans/P001 — Single plan",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Plan ID matches', () => pm.expect(body.planId).to.eql('P001'));",
+                  "pm.test('Has price', () => pm.expect(body.price).to.be.a('number'));",
+                  "pm.test('Has currency', () => pm.expect(body.currency).to.eql('USD'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{GW_URL}}/telecom/plan/v1/plans/P001",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }]
+          }
+        },
+        {
+          "name": "GET /plans/P999 — 404 not found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has error code', () => pm.expect(body.code).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{GW_URL}}/telecom/plan/v1/plans/P999",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "2. Network Status API",
+      "item": [
+        {
+          "name": "GET /network/status — All regions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Has regions array', () => pm.expect(body.regions).to.be.an('array'));",
+                  "pm.test('Has summary', () => pm.expect(body.summary).to.have.property('operational'));",
+                  "pm.test('Has generatedAt', () => pm.expect(body.generatedAt).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{GW_URL}}/telecom/network/v1/network/status",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }]
+          }
+        },
+        {
+          "name": "GET /network/status?status=degraded — Filter degraded",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{GW_URL}}/telecom/network/v1/network/status?status=degraded", "query": [{ "key": "status", "value": "degraded" }] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }]
+          }
+        },
+        {
+          "name": "GET /network/status/REG-NA-01 — Single region",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Region ID matches', () => pm.expect(body.regionId).to.eql('REG-NA-01'));",
+                  "pm.test('Has lastUpdated', () => pm.expect(body.lastUpdated).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{GW_URL}}/telecom/network/v1/network/status/REG-NA-01",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }]
+          }
+        },
+        {
+          "name": "GET /network/incidents — Active incidents",
+          "request": {
+            "method": "GET",
+            "url": "{{GW_URL}}/telecom/network/v1/network/incidents",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }]
+          }
+        },
+        {
+          "name": "GET /network/coverage/5G — By technology",
+          "request": {
+            "method": "GET",
+            "url": "{{GW_URL}}/telecom/network/v1/network/coverage/5G",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "3. Usage API",
+      "item": [
+        {
+          "name": "GET /usage/SUB-001 — Subscriber usage",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('Subscriber ID matches', () => pm.expect(body.subscriberId).to.eql('SUB-001'));",
+                  "pm.test('Has dataUsedGB', () => pm.expect(body.dataUsedGB).to.be.a('number'));",
+                  "pm.test('Has billing period', () => pm.expect(body.billingPeriod).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{GW_URL}}/telecom/usage/v1/usage/SUB-001",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }]
+          }
+        },
+        {
+          "name": "GET /usage/summary?partnerId=mvno-a — Summary",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{GW_URL}}/telecom/usage/v1/usage/summary?partnerId=mvno-a", "query": [{ "key": "partnerId", "value": "mvno-a" }] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }]
+          }
+        },
+        {
+          "name": "GET /usage/export?format=json — JSON export",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{GW_URL}}/telecom/usage/v1/usage/export?format=json", "query": [{ "key": "format", "value": "json" }] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "4. Security Tests",
+      "item": [
+        {
+          "name": "No token → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Should be 401', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{GW_URL}}/telecom/plan/v1/plans"
+          }
+        },
+        {
+          "name": "Invalid token → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": ["pm.test('Should be 401', () => pm.response.to.have.status(401));"]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{GW_URL}}/telecom/plan/v1/plans",
+            "header": [{ "key": "Authorization", "value": "Bearer this.is.not.a.valid.token" }]
+          }
+        }
+      ]
+    }
+
+  ]
+}

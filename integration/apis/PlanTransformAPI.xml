@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Plan Transform API
+  Receives REST JSON request from APIM Gateway
+  Calls Node.js plan-service SOAP endpoint
+  Transforms XML response to JSON
+  Returns JSON to APIM Gateway
+-->
+<api name="PlanTransformAPI"
+    context="/plan"
+    xmlns="http://ws.apache.org/ns/synapse">
+
+  <!-- ─── GET /plan/v1/plans ─────────────────────────────────────────────── -->
+  <resource methods="GET"
+            uri-template="/v1/plans"
+            faultSequence="error-handler">
+
+    <inSequence>
+
+      <!-- Read query parameters -->
+      <property name="PLAN_TYPE_FILTER"
+                expression="get-property('query.param.type')"
+                scope="default"/>
+
+      <!-- Log the incoming request -->
+      <log level="custom">
+        <property name="MESSAGE" value="[MI PlanAPI] GET /v1/plans called"/>
+        <property name="PARTNER" expression="get-property('transport', 'X-Partner-ID')"/>
+        <property name="TIER" expression="get-property('transport', 'X-Subscriber-Tier')"/>
+        <property name="TYPE_FILTER" expression="get-property('PLAN_TYPE_FILTER')"/>
+      </log>
+
+      <!-- Build SOAP request to legacy BSS (Node.js plan-service SOAP endpoint) -->
+      <payloadFactory media-type="xml">
+        <format>
+          <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                            xmlns:plan="http://telecom.example.com/plan">
+            <soapenv:Header/>
+            <soapenv:Body>
+              <plan:GetAllPlansRequest>
+                <plan:type>$1</plan:type>
+              </plan:GetAllPlansRequest>
+            </soapenv:Body>
+          </soapenv:Envelope>
+        </format>
+        <args>
+          <arg expression="get-property('PLAN_TYPE_FILTER')"/>
+        </args>
+      </payloadFactory>
+
+      <!-- Set SOAP action header -->
+      <header name="SOAPAction" value="urn:GetAllPlans" scope="transport"/>
+      <header name="Content-Type" value="text/xml; charset=UTF-8" scope="transport"/>
+
+      <!-- Call Node.js plan-service SOAP endpoint -->
+      <send>
+        <endpoint key="PlanServiceSOAPEndpoint"/>
+      </send>
+
+    </inSequence>
+
+    <outSequence>
+
+      <!-- Extract plans from SOAP envelope -->
+      <property name="SOAP_BODY"
+                expression="//soapenv:Body//*[local-name()='Plans']"
+                xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"/>
+
+      <!-- Transform SOAP XML to REST JSON -->
+      <script language="js"><![CDATA[
+        var envelope = mc.getEnvelopeXML();
+        var plans = [];
+
+        // Parse SOAP response and extract Plan elements
+        try {
+          var body = mc.getPayloadXML();
+          var planElements = body..*::Plan;
+
+          for each (var plan in planElements) {
+            plans.push({
+              planId:       String(plan.*::PlanID),
+              name:         String(plan.*::PlanName),
+              type:         String(plan.*::PlanType),
+              price:        parseFloat(String(plan.*::Price)),
+              currency:     String(plan.*::Currency),
+              dataGB:       parseInt(String(plan.*::DataGB)),
+              voiceMinutes: parseInt(String(plan.*::VoiceMinutes)),
+              sms:          parseInt(String(plan.*::SMS)),
+              validityDays: parseInt(String(plan.*::ValidityDays)),
+              status:       String(plan.*::Status),
+              tier:         String(plan.*::Tier)
+            });
+          }
+        } catch(e) {
+          mc.setProperty('TRANSFORM_ERROR', e.toString());
+        }
+
+        var response = {
+          total: plans.length,
+          count: plans.length,
+          plans: plans,
+          transformedBy: 'wso2-mi',
+          timestamp: new Date().toISOString()
+        };
+
+        mc.setPayloadJSON(response);
+      ]]></script>
+
+      <!-- Set JSON content-type -->
+      <header name="Content-Type" value="application/json" scope="transport"/>
+      <header name="X-Transformed-By" value="WSO2-MI" scope="transport"/>
+
+      <send/>
+
+    </outSequence>
+
+    <faultSequence>
+      <sequence key="error-handler"/>
+    </faultSequence>
+
+  </resource>
+
+  <!-- ─── GET /plan/v1/plans/{planId} ────────────────────────────────────── -->
+  <resource methods="GET"
+            uri-template="/v1/plans/{planId}"
+            faultSequence="error-handler">
+
+    <inSequence>
+
+      <property name="PLAN_ID"
+                expression="get-property('uri.var.planId')"
+                scope="default"/>
+
+      <log level="custom">
+        <property name="MESSAGE" value="[MI PlanAPI] GET /v1/plans/{id} called"/>
+        <property name="PLAN_ID" expression="get-property('PLAN_ID')"/>
+      </log>
+
+      <!-- Build SOAP GetPlanById request -->
+      <payloadFactory media-type="xml">
+        <format>
+          <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+                            xmlns:plan="http://telecom.example.com/plan">
+            <soapenv:Header/>
+            <soapenv:Body>
+              <plan:GetPlanByIdRequest>
+                <plan:planId>$1</plan:planId>
+              </plan:GetPlanByIdRequest>
+            </soapenv:Body>
+          </soapenv:Envelope>
+        </format>
+        <args>
+          <arg expression="get-property('PLAN_ID')"/>
+        </args>
+      </payloadFactory>
+
+      <header name="SOAPAction" value="urn:GetPlanById" scope="transport"/>
+      <header name="Content-Type" value="text/xml; charset=UTF-8" scope="transport"/>
+
+      <send>
+        <endpoint key="PlanServiceSOAPEndpoint"/>
+      </send>
+
+    </inSequence>
+
+    <outSequence>
+
+      <!-- Transform single plan from SOAP XML to JSON -->
+      <script language="js"><![CDATA[
+        try {
+          var body = mc.getPayloadXML();
+          var planEl = body.*::Plan;
+
+          if (!planEl || planEl.length() === 0) {
+            mc.setProperty('HTTP_SC', '404');
+            mc.setPayloadJSON({ code: 'PLAN_NOT_FOUND', message: 'Plan not found' });
+          } else {
+            var plan = {
+              planId:       String(planEl.*::PlanID),
+              name:         String(planEl.*::PlanName),
+              type:         String(planEl.*::PlanType),
+              price:        parseFloat(String(planEl.*::Price)),
+              currency:     String(planEl.*::Currency),
+              dataGB:       parseInt(String(planEl.*::DataGB)),
+              voiceMinutes: parseInt(String(planEl.*::VoiceMinutes)),
+              sms:          parseInt(String(planEl.*::SMS)),
+              validityDays: parseInt(String(planEl.*::ValidityDays)),
+              status:       String(planEl.*::Status),
+              tier:         String(planEl.*::Tier)
+            };
+            mc.setPayloadJSON(plan);
+          }
+        } catch(e) {
+          mc.setProperty('HTTP_SC', '500');
+          mc.setPayloadJSON({ code: 'TRANSFORM_ERROR', message: e.toString() });
+        }
+      ]]></script>
+
+      <header name="Content-Type" value="application/json" scope="transport"/>
+      <header name="X-Transformed-By" value="WSO2-MI" scope="transport"/>
+      <send/>
+
+    </outSequence>
+
+  </resource>
+
+</api>

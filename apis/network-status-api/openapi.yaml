@@ -1,0 +1,203 @@
+openapi: 3.0.3
+info:
+  title: Telecom Network Status API
+  description: |
+    Provides real-time network health, coverage, and incident data by region.
+    Used by MVNO partners to check 5G/4G availability before SIM deployment.
+  version: 1.0.0
+servers:
+  - url: https://localhost:8243/telecom/network/v1
+    description: APIM Gateway (local)
+security:
+  - OAuth2: [network:read]
+tags:
+  - name: Network
+    description: Network status and coverage operations
+paths:
+  /network/status:
+    get:
+      summary: Get all region statuses
+      operationId: getAllNetworkStatus
+      tags: [Network]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [operational, degraded, outage]
+        - name: technology
+          in: query
+          schema:
+            type: string
+            enum: [5G, 4G, 3G]
+        - name: country
+          in: query
+          schema:
+            type: string
+            example: US
+      responses:
+        '200':
+          description: Network status for all regions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkStatusListResponse'
+              example:
+                total: 8
+                summary:
+                  operational: 6
+                  degraded: 2
+                  outage: 0
+                regions:
+                  - regionId: "REG-NA-01"
+                    regionName: "North America - East"
+                    country: "US"
+                    status: "operational"
+                    technology: "5G"
+                    coveragePct: 98.5
+                    latencyMs: 12
+                    lastUpdated: "2024-04-21T10:00:00Z"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /network/status/{regionId}:
+    get:
+      summary: Get status for specific region
+      operationId: getRegionStatus
+      tags: [Network]
+      parameters:
+        - name: regionId
+          in: path
+          required: true
+          schema:
+            type: string
+            example: REG-NA-01
+      responses:
+        '200':
+          description: Region network status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegionStatus'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /network/incidents:
+    get:
+      summary: Get active incidents
+      operationId: getActiveIncidents
+      tags: [Network]
+      responses:
+        '200':
+          description: Active network incidents
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  incidents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Incident'
+
+  /network/coverage/{technology}:
+    get:
+      summary: Get coverage by technology
+      operationId: getCoverageByTechnology
+      tags: [Network]
+      parameters:
+        - name: technology
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [5G, 4G, 3G]
+      responses:
+        '200':
+          description: Coverage data for specified technology
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkStatusListResponse'
+
+components:
+  schemas:
+    RegionStatus:
+      type: object
+      properties:
+        regionId: { type: string }
+        regionName: { type: string }
+        country: { type: string }
+        status:
+          type: string
+          enum: [operational, degraded, outage]
+        technology:
+          type: string
+          enum: [5G, 4G, 3G]
+        coveragePct: { type: number }
+        latencyMs: { type: integer }
+        incidentCount: { type: integer }
+        lastUpdated: { type: string, format: date-time }
+        nextUpdateIn: { type: integer, description: Seconds until next update }
+
+    NetworkStatusListResponse:
+      type: object
+      properties:
+        total: { type: integer }
+        summary:
+          type: object
+          properties:
+            operational: { type: integer }
+            degraded: { type: integer }
+            outage: { type: integer }
+        regions:
+          type: array
+          items:
+            $ref: '#/components/schemas/RegionStatus'
+        generatedAt: { type: string, format: date-time }
+
+    Incident:
+      type: object
+      properties:
+        regionId: { type: string }
+        regionName: { type: string }
+        status: { type: string }
+        technology: { type: string }
+        coveragePct: { type: number }
+        estimatedRestoration: { type: string, format: date-time }
+
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Region not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    TooManyRequests:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://localhost:9444/oauth2/token
+          scopes:
+            network:read: Read network status and coverage data

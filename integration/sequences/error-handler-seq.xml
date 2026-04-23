@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Global Error Handler Sequence
+  Catches errors from backend services and returns standardised JSON error responses
+-->
+<sequence name="error-handler"
+          xmlns="http://ws.apache.org/ns/synapse">
+
+  <log level="custom">
+    <property name="MESSAGE" value="[MI] Error handler triggered"/>
+    <property name="ERROR_CODE" expression="get-property('ERROR_CODE')"/>
+    <property name="ERROR_MESSAGE" expression="get-property('ERROR_MESSAGE')"/>
+    <property name="ERROR_DETAIL" expression="get-property('ERROR_DETAIL')"/>
+  </log>
+
+  <!-- Determine HTTP status from error code -->
+  <filter xpath="get-property('ERROR_CODE') = '101503'">
+    <then>
+      <!-- Connection refused — backend down -->
+      <property name="HTTP_SC" value="503" scope="axis2"/>
+      <property name="ERROR_REASON" value="Backend service unavailable"/>
+    </then>
+    <else>
+      <filter xpath="get-property('ERROR_CODE') = '101504'">
+        <then>
+          <!-- Timeout -->
+          <property name="HTTP_SC" value="504" scope="axis2"/>
+          <property name="ERROR_REASON" value="Backend service timeout"/>
+        </then>
+        <else>
+          <!-- Generic error -->
+          <property name="HTTP_SC" value="500" scope="axis2"/>
+          <property name="ERROR_REASON" value="Internal server error"/>
+        </else>
+      </filter>
+    </else>
+  </filter>
+
+  <!-- Build JSON error response -->
+  <payloadFactory media-type="json">
+    <format>
+      {
+        "code": "BACKEND_ERROR",
+        "message": "$1",
+        "errorCode": "$2",
+        "timestamp": "$3",
+        "traceId": "$4"
+      }
+    </format>
+    <args>
+      <arg expression="get-property('ERROR_REASON')"/>
+      <arg expression="get-property('ERROR_CODE')"/>
+      <arg expression="get-property('SYSTEM_DATE', 'DATE_TIME')"/>
+      <arg expression="get-property('MessageID')"/>
+    </args>
+  </payloadFactory>
+
+  <header name="Content-Type" value="application/json" scope="transport"/>
+
+  <send/>
+
+</sequence>

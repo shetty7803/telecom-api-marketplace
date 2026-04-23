@@ -1,0 +1,6 @@
+CREATE DATABASE IF NOT EXISTS apim_db
+  CHARACTER SET latin1
+  COLLATE latin1_swedish_ci;
+
+GRANT ALL PRIVILEGES ON apim_db.* TO 'apim_user'@'%';
+FLUSH PRIVILEGES;

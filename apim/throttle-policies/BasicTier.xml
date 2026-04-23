@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<throttle:ThrottleAssertion xmlns:throttle="http://www.wso2.org/products/wso2commons/throttle">
+  <wsp:Policy xmlns:wsp="http://schemas.xmlsoap.org/ws/2004/09/policy">
+    <throttle:ID throttle:type="ROLE">BasicTier</throttle:ID>
+    <wsp:All>
+      <throttle:MaximumCount>100</throttle:MaximumCount>
+      <throttle:UnitTime>60000</throttle:UnitTime>
+      <throttle:ProhibitTimePeriod empty="true"/>
+    </wsp:All>
+  </wsp:Policy>
+</throttle:ThrottleAssertion>

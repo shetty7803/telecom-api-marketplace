@@ -1,0 +1,287 @@
+openapi: 3.0.3
+info:
+  title: Telecom Plan API
+  description: |
+    Exposes telecom service plans (prepaid, postpaid, wholesale, IoT) for MVNO
+    partners and internal teams. Backed by WSO2 MI which transforms responses
+    from the legacy BSS SOAP system into clean REST JSON.
+  version: 1.0.0
+  contact:
+    name: Telecom API Team
+    email: api-support@telecom.example.com
+
+servers:
+  - url: https://localhost:8243/telecom/plan/v1
+    description: APIM Gateway (local)
+
+security:
+  - OAuth2:
+      - plan:read
+
+tags:
+  - name: Plans
+    description: Telecom service plan operations
+
+paths:
+
+  /plans:
+    get:
+      summary: List all plans
+      description: Returns all available telecom plans with optional type/tier filtering.
+      operationId: listPlans
+      tags: [Plans]
+      parameters:
+        - name: type
+          in: query
+          description: Filter by plan type
+          schema:
+            type: string
+            enum: [prepaid, postpaid, wholesale, iot]
+        - name: tier
+          in: query
+          description: Filter by commercial tier
+          schema:
+            type: string
+            enum: [basic, business, premium]
+        - name: status
+          in: query
+          description: Filter by status
+          schema:
+            type: string
+            enum: [active, inactive, deprecated]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: List of plans returned successfully
+          headers:
+            X-Transformed-By:
+              schema:
+                type: string
+              description: Indicates WSO2 MI transformed the response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanListResponse'
+              example:
+                total: 5
+                count: 2
+                offset: 0
+                limit: 20
+                plans:
+                  - planId: "P001"
+                    name: "Starter Prepaid"
+                    type: "prepaid"
+                    price: 9.99
+                    currency: "USD"
+                    dataGB: 5
+                    voiceMinutes: 100
+                    sms: 500
+                    validityDays: 30
+                    status: "active"
+                    tier: "basic"
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /plans/{planId}:
+    get:
+      summary: Get plan by ID
+      operationId: getPlanById
+      tags: [Plans]
+      parameters:
+        - name: planId
+          in: path
+          required: true
+          description: Unique plan identifier (e.g. P001)
+          schema:
+            type: string
+            pattern: '^P\d{3}$'
+            example: P001
+      responses:
+        '200':
+          description: Plan found and returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plan'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /plans/wholesale:
+    get:
+      summary: List wholesale plans
+      description: Returns only wholesale plans available for MVNO partners.
+      operationId: listWholesalePlans
+      tags: [Plans]
+      security:
+        - OAuth2: [plan:read]
+      responses:
+        '200':
+          description: Wholesale plans returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanListResponse'
+
+components:
+
+  schemas:
+
+    Plan:
+      type: object
+      required: [planId, name, type, price, currency, dataGB, validityDays, status]
+      properties:
+        planId:
+          type: string
+          example: P001
+        name:
+          type: string
+          example: Starter Prepaid
+        type:
+          type: string
+          enum: [prepaid, postpaid, wholesale, iot]
+        price:
+          type: number
+          format: decimal
+          example: 9.99
+        currency:
+          type: string
+          example: USD
+        dataGB:
+          type: integer
+          description: -1 means unlimited
+          example: 5
+        voiceMinutes:
+          type: integer
+          description: -1 means unlimited
+          example: 100
+        sms:
+          type: integer
+          description: -1 means unlimited
+          example: 500
+        validityDays:
+          type: integer
+          example: 30
+        features:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [active, inactive, deprecated]
+        tier:
+          type: string
+          enum: [basic, business, premium]
+
+    PlanListResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+        count:
+          type: integer
+        offset:
+          type: integer
+        limit:
+          type: integer
+        plans:
+          type: array
+          items:
+            $ref: '#/components/schemas/Plan'
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: PLAN_NOT_FOUND
+        message:
+          type: string
+          example: Plan P999 not found
+        timestamp:
+          type: string
+          format: date-time
+        traceId:
+          type: string
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid OAuth2 token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: UNAUTHORIZED
+            message: Missing or invalid access token
+    Forbidden:
+      description: Token lacks required scope
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: FORBIDDEN
+            message: Scope 'plan:read' required
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    TooManyRequests:
+      description: Throttle limit exceeded for subscription tier
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until quota resets
+        X-RateLimit-Limit:
+          schema:
+            type: integer
+        X-RateLimit-Remaining:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            code: THROTTLE_LIMIT_EXCEEDED
+            message: Business tier limit of 500 req/min exceeded
+    InternalError:
+      description: Backend or MI transformation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    OAuth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://localhost:9444/oauth2/token
+          scopes:
+            plan:read: Read telecom plan data
+            plan:write: Create or modify plan subscriptions

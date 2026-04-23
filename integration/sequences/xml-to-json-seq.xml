@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  XML to JSON Transform Sequence
+  Called by PlanTransformAPI when WSO2 MI receives SOAP XML from plan-service
+  and needs to return clean JSON to the APIM gateway
+-->
+<sequence name="xml-to-json-transform"
+          xmlns="http://ws.apache.org/ns/synapse">
+
+  <!-- Log incoming request -->
+  <log level="custom">
+    <property name="MESSAGE" value="[MI] Received SOAP response - starting XML to JSON transform"/>
+    <property name="PARTNER_ID" expression="get-property('X-Partner-ID')"/>
+    <property name="SUBSCRIBER_TIER" expression="get-property('X-Subscriber-Tier')"/>
+  </log>
+
+  <!-- Step 1: Extract the XML payload from SOAP envelope -->
+  <payloadFactory media-type="xml">
+    <format>
+      <Plans xmlns="">
+        $1
+      </Plans>
+    </format>
+    <args>
+      <arg expression="//Plans/Plan"/>
+    </args>
+  </payloadFactory>
+
+  <!-- Step 2: Transform XML to JSON using XSLT -->
+  <xslt key="gov:resources/transforms/plan-xml-to-json.xslt"/>
+
+  <!-- Step 3: Set response content type to JSON -->
+  <header name="Content-Type" value="application/json" scope="transport"/>
+
+  <!-- Step 4: Apply partner-tier pricing adjustment -->
+  <filter xpath="get-property('X-Subscriber-Tier') = 'business'">
+    <then>
+      <!-- Business tier: apply 10% wholesale discount flag -->
+      <property name="WHOLESALE_ELIGIBLE" value="true" scope="axis2"/>
+    </then>
+  </filter>
+
+  <!-- Step 5: Add standard response headers -->
+  <header name="X-Service" value="telecom-mi" scope="transport"/>
+  <header name="X-Transform" value="xml-to-json" scope="transport"/>
+
+  <!-- Step 6: Log transformed output -->
+  <log level="custom">
+    <property name="MESSAGE" value="[MI] XML to JSON transform complete"/>
+    <property name="RESPONSE_TYPE" value="application/json"/>
+  </log>
+
+  <!-- Step 7: Send response -->
+  <send/>
+
+</sequence>

@@ -1,0 +1,101 @@
+[server]
+hostname = "localhost"
+node_ip = "127.0.0.1"
+offset = 0
+
+[super_admin]
+username = "admin"
+password = "admin"
+create_admin_account = true
+
+[user_store]
+type = "database_unique_id"
+
+# ─── MySQL Database ──────────────────────────────────────────────────────────
+[database.apim_db]
+type = "mysql"
+url = "jdbc:mysql://mysql:3306/apim_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+username = "apim_user"
+password = "apim_pass"
+driver = "com.mysql.cj.jdbc.Driver"
+[database.apim_db.pool_options]
+maxActive = 50
+maxWait = 60000
+testOnBorrow = true
+validationQuery = "SELECT 1"
+
+[database.shared_db]
+type = "mysql"
+url = "jdbc:mysql://mysql:3306/apim_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+username = "apim_user"
+password = "apim_pass"
+driver = "com.mysql.cj.jdbc.Driver"
+
+# ─── Keystore ────────────────────────────────────────────────────────────────
+[keystore.tls]
+file_name = "wso2carbon.jks"
+type = "JKS"
+password = "wso2carbon"
+alias = "wso2carbon"
+key_password = "wso2carbon"
+
+[truststore]
+file_name = "client-truststore.jks"
+type = "JKS"
+password = "wso2carbon"
+
+# ─── API Gateway ─────────────────────────────────────────────────────────────
+[[apim.gateway.environment]]
+name = "Default"
+type = "hybrid"
+display_in_api_console = true
+description = "Telecom API Gateway - Local Environment"
+show_as_token_endpoint_url = true
+service_url = "https://localhost:9443/services/"
+username = "${admin.username}"
+password = "${admin.password}"
+ws_endpoint = "ws://localhost:9099"
+wss_endpoint = "wss://localhost:8099"
+http_endpoint = "http://localhost:8280"
+https_endpoint = "https://localhost:8243"
+
+# ─── Analytics ───────────────────────────────────────────────────────────────
+[apim.analytics]
+enable = true
+store_api_calls = true
+
+# ─── Developer Portal ────────────────────────────────────────────────────────
+[apim.devportal]
+url = "https://localhost:9443/devportal"
+enable_cross_tenant_subscriptions = false
+display_multiple_versions = true
+display_deprecated_apis = true
+enable_comments = true
+enable_ratings = true
+enable_forum = true
+
+# ─── Token Configuration ────────────────────────────────────────────────────
+[apim.oauth_configs]
+enable_token_encryption = false
+enable_token_hashing = false
+
+[apim.jwt_configs]
+enable = true
+encoding = "base64"
+generator_impl = "org.wso2.carbon.apimgt.keymgt.token.JWTGenerator"
+claim_dialect = "http://wso2.org/claims"
+include_stdclaims = true
+
+# ─── Throttling ──────────────────────────────────────────────────────────────
+[apim.throttling]
+enable_global_event_publishing = false
+enable_header_based_throttling = false
+enable_jwt_claim_based_throttling = false
+enable_query_param_based_throttling = false
+
+# ─── CORS ────────────────────────────────────────────────────────────────────
+[apim.cors]
+allow_origins = ["*"]
+allow_methods = ["GET","PUT","POST","DELETE","PATCH","OPTIONS"]
+allow_headers = ["authorization","Access-Control-Allow-Origin","Content-Type","SOAPAction","apikey","Internal-Key"]
+allow_credentials = false

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:tns="http://telecom.example.com/plan"
+             xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+             targetNamespace="http://telecom.example.com/plan"
+             name="PlanService">
+
+  <types>
+    <xsd:schema targetNamespace="http://telecom.example.com/plan">
+      <xsd:element name="GetAllPlans">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="type" type="xsd:string" minOccurs="0"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="GetAllPlansResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="Plans" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+
+      <xsd:element name="GetPlanById">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="planId" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="GetPlanByIdResponse">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element name="Plan" type="xsd:string"/>
+          </xsd:sequence>
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </types>
+
+  <message name="GetAllPlansRequest">
+    <part name="parameters" element="tns:GetAllPlans"/>
+  </message>
+  <message name="GetAllPlansResponse">
+    <part name="parameters" element="tns:GetAllPlansResponse"/>
+  </message>
+
+  <message name="GetPlanByIdRequest">
+    <part name="parameters" element="tns:GetPlanById"/>
+  </message>
+  <message name="GetPlanByIdResponse">
+    <part name="parameters" element="tns:GetPlanByIdResponse"/>
+  </message>
+
+  <portType name="PlanServicePort">
+    <operation name="GetAllPlans">
+      <input message="tns:GetAllPlansRequest"/>
+      <output message="tns:GetAllPlansResponse"/>
+    </operation>
+    <operation name="GetPlanById">
+      <input message="tns:GetPlanByIdRequest"/>
+      <output message="tns:GetPlanByIdResponse"/>
+    </operation>
+  </portType>
+
+  <binding name="PlanServiceBinding" type="tns:PlanServicePort">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+    <operation name="GetAllPlans">
+      <soap:operation soapAction="GetAllPlans"/>
+      <input>
+        <soap:body use="literal"/>
+      </input>
+      <output>
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+    <operation name="GetPlanById">
+      <soap:operation soapAction="GetPlanById"/>
+      <input>
+        <soap:body use="literal"/>
+      </input>
+      <output>
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+  </binding>
+
+  <service name="PlanService">
+    <port name="PlanServicePort" binding="tns:PlanServiceBinding">
+      <soap:address location="http://localhost:9091/soap/plans"/>
+    </port>
+  </service>
+
+</definitions>
