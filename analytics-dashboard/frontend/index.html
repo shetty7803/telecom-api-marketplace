@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Telecom API Analytics — WSO2 APIM</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#070C14;--s1:#0C1520;--s2:#111D2B;--br:#162030;--ac:#00D4FF;--ac2:#7C5CFF;--gn:#00E676;--wn:#FFB300;--er:#FF4444;--tx:#E0EEFF;--mu:#4A6A8A}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;display:flex}
+.sb{width:220px;background:var(--s1);border-right:1px solid var(--br);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;overflow-y:auto}
+.logo{padding:18px 16px;border-bottom:1px solid var(--br)}
+.logo-icon{font-size:22px;margin-bottom:3px}
+.logo-t{font-size:11px;font-weight:700;letter-spacing:2px;color:var(--ac);text-transform:uppercase}
+.logo-s{font-size:9px;color:var(--mu);margin-top:1px}
+.nav{padding:10px 8px;flex:1}
+.nlbl{font-size:9px;font-weight:700;letter-spacing:2px;color:var(--mu);text-transform:uppercase;padding:3px 8px;margin:10px 0 3px}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:7px;cursor:pointer;font-size:12px;font-weight:500;color:var(--mu);transition:.12s;border:1px solid transparent;margin-bottom:1px}
+.ni:hover{background:var(--s2);color:var(--tx)}
+.ni.active{background:rgba(0,212,255,.08);color:var(--ac);border-color:rgba(0,212,255,.2)}
+.stbar{padding:10px 14px;border-top:1px solid var(--br);display:flex;align-items:center;gap:7px;font-size:10px;color:var(--mu)}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--gn);box-shadow:0 0 5px var(--gn);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.mn{margin-left:220px;flex:1;display:flex;flex-direction:column}
+.tb{background:var(--s1);border-bottom:1px solid var(--br);padding:0 22px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.pg-t{font-size:14px;font-weight:600}
+.pg-s{font-size:10px;color:var(--mu)}
+.tbr{display:flex;align-items:center;gap:9px}
+.rtabs{display:flex;background:var(--bg);border:1px solid var(--br);border-radius:7px;padding:2px}
+.rtab{padding:4px 11px;border-radius:5px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mu);background:transparent;border:none;font-family:monospace}
+.rtab.active{background:var(--ac);color:#000}
+.rbtn{padding:5px 11px;background:transparent;border:1px solid var(--br);border-radius:7px;color:var(--mu);font-size:11px;cursor:pointer;transition:.12s}
+.rbtn:hover{border-color:var(--ac);color:var(--ac)}
+.live{display:flex;align-items:center;gap:4px;font-size:9px;font-weight:700;color:var(--gn);letter-spacing:1px}
+.ld{width:4px;height:4px;background:var(--gn);border-radius:50%;animation:pulse 1.5s infinite}
+.ct{padding:22px;flex:1}
+.pg{display:none}.pg.active{display:block}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.g2{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:12px}
+/* Cards */
+.card{background:var(--s1);border:1px solid var(--br);border-radius:10px;padding:16px;position:relative;overflow:hidden;transition:.15s}
+.card:hover{border-color:rgba(0,212,255,.2)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--cl,var(--ac))}
+.c-er{--cl:var(--er)}.c-wn{--cl:var(--wn)}.c-gn{--cl:var(--gn)}.c-pu{--cl:var(--ac2)}
+.slbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);margin-bottom:7px}
+.sval{font-family:monospace;font-size:24px;font-weight:700;line-height:1;margin-bottom:3px}
+.sval.ac{color:var(--ac)}.sval.er{color:var(--er)}.sval.wn{color:var(--wn)}.sval.gn{color:var(--gn)}
+.smt{font-size:10px;color:var(--mu)}.sic{position:absolute;top:14px;right:14px;font-size:18px;opacity:.1}
+/* Section */
+.sec{margin-bottom:20px}
+.shdr{display:flex;align-items:center;margin-bottom:12px;gap:10px}
+.stitle{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mu);white-space:nowrap}
+.sline{flex:1;height:1px;background:var(--br)}
+/* Chart card */
+.cc{background:var(--s1);border:1px solid var(--br);border-radius:10px;padding:16px}
+.cc-t{font-size:12px;font-weight:600;margin-bottom:2px}
+.cc-s{font-size:10px;color:var(--mu);margin-bottom:12px}
+/* API row */
+.ar{background:var(--s1);border:1px solid var(--br);border-radius:9px;padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:7px;transition:.15s}
+.ar:hover{border-color:rgba(0,212,255,.25);background:var(--s2)}
+.adot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.an{font-size:12px;font-weight:600;margin-bottom:2px}
+.ac2{font-size:10px;color:var(--mu);font-family:monospace}
+.as{display:flex;gap:18px}
+.av{font-family:monospace;font-size:12px;font-weight:700}
+.al{font-size:9px;color:var(--mu)}
+/* Table */
+.tc{background:var(--s1);border:1px solid var(--br);border-radius:10px;overflow:hidden}
+.th2{padding:12px 16px;border-bottom:1px solid var(--br);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.tt{font-size:12px;font-weight:600}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:7px 12px;font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);background:rgba(0,0,0,.2);border-bottom:1px solid var(--br)}
+td{padding:8px 12px;font-size:11px;border-bottom:1px solid rgba(22,32,48,.5)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(255,255,255,.015)}
+.mono{font-family:monospace;font-size:10px}
+.pb{height:3px;background:var(--br);border-radius:2px;margin-top:2px;overflow:hidden}
+.pf{height:100%;border-radius:2px}
+/* Alerts */
+.arow{display:flex;align-items:flex-start;gap:9px;padding:9px 12px;border-bottom:1px solid var(--br)}
+.arow:last-child{border-bottom:none}
+.adtl{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.adtl.aerr{background:var(--er);box-shadow:0 0 5px var(--er)}
+.adtl.awarn{background:var(--wn);box-shadow:0 0 5px var(--wn)}
+.adtl.ainfo{background:var(--ac);box-shadow:0 0 5px var(--ac)}
+.amsg{font-size:11px;margin-bottom:2px}.amt{font-size:9px;color:var(--mu)}
+/* Health */
+.hr{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--br)}
+.hr:last-child{border-bottom:none}
+.hs{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:700}
+.hs.up{color:var(--gn)}.hs.down{color:var(--er)}
+/* Badges */
+.badge{padding:2px 8px;border-radius:11px;font-size:9px;font-weight:700}
+.b-ok{background:rgba(0,230,118,.1);color:var(--gn);border:1px solid rgba(0,230,118,.2)}
+.b-wn{background:rgba(255,179,0,.1);color:var(--wn);border:1px solid rgba(255,179,0,.2)}
+.b-er{background:rgba(255,68,68,.1);color:var(--er);border:1px solid rgba(255,68,68,.2)}
+.tier{padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700}
+.tG{background:rgba(255,179,0,.12);color:var(--wn)}.tS{background:rgba(150,150,170,.12);color:#A0A0B4}
+.tB{background:rgba(180,100,50,.12);color:#CD7F32}.tU{background:rgba(0,212,255,.08);color:var(--ac)}
+.ecode{font-family:monospace;font-size:18px;font-weight:700}
+.e401{color:var(--er)}.e403{color:#FF6B35}.e404{color:var(--wn)}.e429{color:var(--ac2)}.e500,.e503{color:var(--er)}
+/* Scopes */
+.scrow{display:flex;align-items:center;gap:9px;padding:8px 12px;border-bottom:1px solid var(--br)}
+.scrow:last-child{border-bottom:none}
+.scn{font-family:monospace;font-size:10px;color:var(--ac2);width:120px;flex-shrink:0}
+.scb{flex:1}.scc{font-family:monospace;font-size:10px;color:var(--mu);width:50px;text-align:right;flex-shrink:0}
+/* Plan cards */
+.pc{background:var(--s1);border:1px solid var(--br);border-radius:9px;padding:14px;transition:.15s}
+.pc:hover{border-color:rgba(0,212,255,.25)}
+.pt{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;text-transform:uppercase;margin-bottom:7px}
+.pt-prepaid{background:rgba(0,212,255,.1);color:var(--ac)}.pt-postpaid{background:rgba(124,92,255,.1);color:var(--ac2)}
+.pt-wholesale{background:rgba(255,179,0,.1);color:var(--wn)}.pt-iot{background:rgba(0,230,118,.1);color:var(--gn)}
+.pn{font-size:12px;font-weight:700;margin-bottom:3px}
+.pp{font-family:monospace;font-size:16px;font-weight:700;color:var(--ac);margin-bottom:7px}
+.pm{font-size:10px;color:var(--mu);margin-bottom:3px}
+/* Region cards */
+.rc{background:var(--s1);border:1px solid var(--br);border-radius:9px;padding:14px;transition:.15s}
+.rc:hover{border-color:rgba(0,212,255,.2)}
+.rn{font-size:12px;font-weight:700;margin-bottom:3px}
+.rs{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:700;margin-bottom:10px}
+.rs-op{color:var(--gn)}.rs-dg{color:var(--wn)}
+.sb-bar{height:7px;border-radius:4px;overflow:hidden;display:flex;margin-bottom:5px}
+/* Form */
+.fp{background:var(--s1);border:1px solid var(--br);border-radius:10px;padding:18px}
+.fr{display:flex;flex-direction:column;gap:3px;margin-bottom:12px}
+.fl{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--mu)}
+.fi{background:var(--bg);border:1px solid var(--br);border-radius:7px;padding:7px 11px;color:var(--tx);font-size:12px;font-family:'Segoe UI',sans-serif;outline:none;transition:.12s;width:100%}
+.fi:focus{border-color:var(--ac)}
+.fi::placeholder{color:var(--mu)}
+select.fi option{background:var(--s1)}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{padding:8px 16px;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:.12s;font-family:'Segoe UI',sans-serif}
+.btn-p{background:var(--ac);color:#000}.btn-p:hover{background:#00bbd4}
+.btn-s{background:transparent;border:1px solid var(--br);color:var(--mu)}.btn-s:hover{border-color:var(--ac);color:var(--ac)}
+.btn-d{background:transparent;border:1px solid var(--er);color:var(--er);padding:3px 9px;font-size:10px}
+.rb{border-radius:7px;padding:10px 14px;font-size:11px;margin-top:10px;font-family:monospace;display:none}
+.rb.ok{background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.2);color:var(--gn)}
+.rb.fail{background:rgba(255,68,68,.06);border:1px solid rgba(255,68,68,.2);color:var(--er)}
+.rb.info{background:rgba(0,212,255,.06);border:1px solid rgba(0,212,255,.2);color:var(--ac)}
+/* Tester */
+.rl{max-height:220px;overflow-y:auto}
+.rrow{display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:1px solid var(--br);font-size:11px}
+.rrow:last-child{border-bottom:none}
+.rm{font-family:monospace;font-size:9px;font-weight:700;padding:2px 5px;border-radius:3px;background:rgba(0,212,255,.1);color:var(--ac);min-width:34px;text-align:center}
+.ru{flex:1;font-family:monospace;font-size:9px;color:var(--mu);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rp{font-size:9px;color:var(--ac2);min-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rs2{font-family:monospace;font-size:11px;font-weight:700;min-width:30px;text-align:center}
+.rt{font-size:9px;color:var(--mu);min-width:45px;text-align:right}
+.s2xx{color:var(--gn)}.s4xx{color:var(--wn)}.s5xx{color:var(--er)}.s0{color:var(--er)}
+.tok-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(74,106,138,.12);color:var(--mu)}
+/* Manage */
+.mr{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-bottom:1px solid var(--br)}
+.mr:last-child{border-bottom:none}
+.mname{font-size:12px;font-weight:600}
+.mmeta{font-size:10px;color:var(--mu);font-family:monospace;margin-top:1px}
+.sp{padding:2px 7px;border-radius:9px;font-size:9px;font-weight:700}
+.sp-pub{background:rgba(0,230,118,.1);color:var(--gn)}.sp-cre{background:rgba(0,212,255,.1);color:var(--ac)}
+.sp2{display:flex;align-items:center}
+/* counter animation */
+.ca{animation:ca .4s ease}
+@keyframes ca{from{transform:scale(1.25);color:var(--ac)}to{transform:scale(1)}}
+/* spinner */
+.spin{width:18px;height:18px;border:2px solid var(--br);border-top-color:var(--ac);border-radius:50%;animation:sp .7s linear infinite;margin:28px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<aside class="sb">
+  <div class="logo">
+    <div class="logo-icon">📡</div>
+    <div class="logo-t">Telecom API</div>
+    <div class="logo-s">Analytics · WSO2 APIM 4.6</div>
+  </div>
+  <nav class="nav">
+    <div class="nlbl">Analytics</div>
+    <div class="ni active" onclick="go('overview',this)">◈ Overview</div>
+    <div class="ni" onclick="go('performance',this)">⚡ Performance</div>
+    <div class="ni" onclick="go('partners',this)">👥 Partners</div>
+    <div class="nlbl">Plans & Regions</div>
+    <div class="ni" onclick="go('plans',this)">📋 Plan Availability</div>
+    <div class="ni" onclick="go('regions',this)">🌍 Region Usage</div>
+    <div class="nlbl">Operations</div>
+    <div class="ni" onclick="go('tester',this)">🧪 API Tester</div>
+    <div class="ni" onclick="go('errors',this)">⚠️ Errors <span style="margin-left:auto;background:var(--er);color:#fff;font-size:8px;padding:1px 4px;border-radius:7px" id="ebadge">0</span></div>
+    <div class="ni" onclick="go('throttle',this)">🚦 Throttling</div>
+    <div class="nlbl">Management</div>
+    <div class="ni" onclick="go('mapi',this)">🔧 Manage APIs</div>
+    <div class="ni" onclick="go('mpartner',this)">🏢 Manage Partners</div>
+    <div class="nlbl">Security</div>
+    <div class="ni" onclick="go('scopes',this)">🔒 Scopes</div>
+    <div class="nlbl">System</div>
+    <div class="ni" onclick="go('health',this)">💚 Health</div>
+  </nav>
+  <div class="stbar"><div class="dot"></div><span id="sysst">All systems operational</span></div>
+</aside>
+
+<main class="mn">
+  <header class="tb">
+    <div>
+      <div class="pg-t" id="pgt">Usage Overview</div>
+      <div class="pg-s" id="pgs">Real-time API traffic and usage metrics</div>
+    </div>
+    <div class="tbr">
+      <div class="live"><div class="ld"></div>LIVE</div>
+      <div class="rtabs">
+        <button class="rtab active" onclick="setR('1h',this)">1h</button>
+        <button class="rtab" onclick="setR('24h',this)">24h</button>
+        <button class="rtab" onclick="setR('7d',this)">7d</button>
+      </div>
+      <button class="rbtn" onclick="refresh()">↻ Refresh</button>
+    </div>
+  </header>
+  <div class="ct">
+
+    <!-- OVERVIEW -->
+    <div class="pg active" id="pg-overview">
+      <div class="sec"><div class="shdr"><span class="stitle">Key Metrics</span><div class="sline"></div></div>
+        <div class="g4" id="ov-cards"><div class="card"><div class="spin"></div></div><div class="card"></div><div class="card"></div><div class="card"></div></div></div>
+      <div class="sec"><div class="shdr"><span class="stitle">Traffic Over Time</span><div class="sline"></div></div>
+        <div class="cc"><div class="cc-t">API Request Volume &amp; Errors</div><div class="cc-s">Requests and errors — updates after each test</div><canvas id="c-traffic" height="190"></canvas></div></div>
+      <div class="sec"><div class="shdr"><span class="stitle">API Breakdown</span><div class="sline"></div></div>
+        <div id="api-rows"><div class="spin"></div></div></div>
+    </div>
+
+    <!-- PERFORMANCE -->
+    <div class="pg" id="pg-performance">
+      <div class="sec"><div class="shdr"><span class="stitle">Request Volume</span><div class="sline"></div></div>
+        <div class="g2">
+          <div class="cc"><div class="cc-t">Requests by API</div><div class="cc-s">Total requests per API</div><canvas id="c-req" height="220"></canvas></div>
+          <div class="cc"><div class="cc-t">Latency (ms)</div><div class="cc-s">Avg and p95 per API</div><canvas id="c-lat" height="220"></canvas></div>
+        </div></div>
+      <div class="sec"><div class="shdr"><span class="stitle">Error Rate</span><div class="sline"></div></div>
+        <div class="cc"><div class="cc-t">Success vs Error %</div><div class="cc-s">Per-API success and error rates</div><canvas id="c-err" height="180"></canvas></div></div>
+    </div>
+
+    <!-- PARTNERS -->
+    <div class="pg" id="pg-partners">
+      <div class="sec"><div class="shdr"><span class="stitle">Partner Activity</span><div class="sline"></div></div>
+        <div class="tc">
+          <div class="th2"><span class="tt">MVNO Partner Applications</span><span id="pcnt" style="font-size:10px;color:var(--mu)"></span></div>
+          <table><thead><tr><th>Partner</th><th>Tier</th><th>Requests</th><th>Errors</th><th>Throttled</th><th>Token Calls</th><th>Last Active</th></tr></thead>
+          <tbody id="ptbody"><tr><td colspan="7"><div class="spin"></div></td></tr></tbody></table></div></div>
+      <div class="sec" style="margin-top:18px"><div class="shdr"><span class="stitle">Distribution</span><div class="sline"></div></div>
+        <div class="cc"><div class="cc-t">Requests by Partner</div><div class="cc-s">Updates immediately after each request</div><canvas id="c-part" height="200"></canvas></div></div>
+    </div>
+
+    <!-- PLANS -->
+    <div class="pg" id="pg-plans">
+      <div class="sec"><div class="shdr"><span class="stitle">Summary</span><div class="sline"></div></div>
+        <div class="g4" id="pl-sum"></div></div>
+      <div class="sec"><div class="shdr"><span class="stitle">Active Plans</span><div class="sline"></div></div>
+        <div class="g3" id="pl-cards"><div class="spin"></div></div></div>
+      <div class="sec"><div class="shdr"><span class="stitle">Distribution</span><div class="sline"></div></div>
+        <div class="g2">
+          <div class="cc"><div class="cc-t">Subscribers by Type</div><div class="cc-s">Plan type breakdown</div><canvas id="c-ptype" height="220"></canvas></div>
+          <div class="cc"><div class="cc-t">API Calls per Plan</div><div class="cc-s">Daily calls from tester</div><canvas id="c-pcalls" height="220"></canvas></div>
+        </div></div>
+    </div>
+
+    <!-- REGIONS -->
+    <div class="pg" id="pg-regions">
+      <div class="sec"><div class="shdr"><span class="stitle">Regional Overview</span><div class="sline"></div></div>
+        <div class="g2" id="rg-sum"></div></div>
+      <div class="sec"><div class="shdr"><span class="stitle">Plan Mix by Region</span><div class="sline"></div></div>
+        <div class="g3" id="rg-cards"></div></div>
+      <div class="sec"><div class="shdr"><span class="stitle">Traffic by Region</span><div class="sline"></div></div>
+        <div class="cc"><div class="cc-t">API Calls by Region</div><div class="cc-s">Proportional to real request log</div><canvas id="c-reg" height="200"></canvas></div></div>
+    </div>
+
+    <!-- TESTER -->
+    <div class="pg" id="pg-tester">
+      <div class="g12">
+        <div>
+          <!-- Token panel -->
+          <div class="sec"><div class="shdr"><span class="stitle">OAuth2 Token</span><div class="sline"></div>
+            <span class="tok-badge" id="tok-badge">NO TOKEN</span></div>
+            <div class="fp">
+              <div class="fr">
+                <label class="fl">Select Partner</label>
+                <select class="fi" id="t-partner" onchange="onPS(this.value)">
+                  <option value="">— Select Partner —</option>
+                  <option value="mvno-partner-app">MVNO Partner App (Gold)</option>
+                  <option value="telecom-test">Telecom Test App (Silver)</option>
+                  <option value="dev-app">Developer App (Bronze)</option>
+                  <option value="internal">Internal Testing (Unlimited)</option>
+                </select>
+              </div>
+              <div class="fr2">
+                <div class="fr" style="margin-bottom:0">
+                  <label class="fl">Consumer Key</label>
+                  <input class="fi" id="t-ck" placeholder="Consumer Key..." style="font-family:monospace;font-size:10px"/>
+                </div>
+                <div class="fr" style="margin-bottom:0">
+                  <label class="fl">Consumer Secret</label>
+                  <input class="fi" id="t-cs" type="password" placeholder="Consumer Secret..."/>
+                </div>
+              </div>
+              <div class="fr">
+                <label class="fl">Scopes</label>
+                <input class="fi" id="t-scope" value="plan:read networkread usage:read"/>
+              </div>
+              <button class="btn btn-p" id="tok-btn" onclick="fetchTok()" style="width:100%">🔑 Get Token Automatically</button>
+              <div id="tok-res" class="rb"></div>
+              <div id="tok-prev" style="display:none;margin-top:8px;padding:7px 10px;background:var(--bg);border:1px solid var(--br);border-radius:7px;font-family:monospace;font-size:9px;color:var(--mu);word-break:break-all"></div>
+            </div>
+          </div>
+          <!-- Request panel -->
+          <div class="sec"><div class="shdr"><span class="stitle">Send Request</span><div class="sline"></div></div>
+            <div class="fp">
+              <div class="fr">
+                <label class="fl">Quick Select API</label>
+                <select class="fi" id="t-api" onchange="prefill(this.value)">
+                  <option value="">— Select API —</option>
+                  <option value="plan">GET /plan/1.0.0/plans</option>
+                  <option value="network">GET /network/1.0.0/network/status</option>
+                  <option value="usage">GET /usage/1.0.0/usage/SUB-001</option>
+                  <option value="custom">Custom URL</option>
+                </select>
+              </div>
+              <div class="fr2">
+                <div class="fr" style="margin-bottom:0">
+                  <label class="fl">Method</label>
+                  <select class="fi" id="t-mth"><option>GET</option><option>POST</option></select>
+                </div>
+                <div class="fr" style="margin-bottom:0">
+                  <label class="fl">Gateway</label>
+                  <select class="fi" id="t-gw" onchange="updUrl()">
+                    <option value="http://localhost:8280">HTTP :8280</option>
+                    <option value="https://localhost:8243">HTTPS :8243</option>
+                  </select>
+                </div>
+              </div>
+              <div class="fr">
+                <label class="fl">URL</label>
+                <input class="fi" id="t-url" placeholder="http://localhost:8280/plan/1.0.0/plans"/>
+              </div>
+              <button class="btn btn-p" id="send-btn" onclick="sendReq()" style="width:100%;margin-top:2px">▶ Send Request</button>
+              <div id="t-res" class="rb"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Right: counters + log -->
+        <div>
+          <div class="sec"><div class="shdr"><span class="stitle">Session Stats</span><div class="sline"></div></div>
+            <div class="g2">
+              <div class="card"><div class="slbl">Total Sent</div><div class="sval ac" id="ts-tot">0</div><div class="smt">this session</div></div>
+              <div class="card c-gn"><div class="slbl">Success</div><div class="sval gn" id="ts-ok">0</div><div class="smt">2xx responses</div></div>
+              <div class="card c-er"><div class="slbl">Failed</div><div class="sval er" id="ts-fail">0</div><div class="smt">4xx / 5xx</div></div>
+              <div class="card"><div class="slbl">Avg Response</div><div class="sval ac" id="ts-lat">—</div><div class="smt">milliseconds</div></div>
+            </div>
+          </div>
+          <div class="sec"><div class="shdr"><span class="stitle">Request Log</span><div class="sline"></div><button class="btn btn-s" onclick="clearLog()" style="padding:2px 9px;font-size:10px">Clear</button></div>
+            <div class="tc">
+              <div class="th2"><span class="tt">Recent Requests</span><span id="log-cnt" style="font-size:10px;color:var(--mu)">0 requests</span></div>
+              <div class="rl" id="req-log"><div style="padding:20px;text-align:center;color:var(--mu);font-size:11px">No requests yet</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ERRORS -->
+    <div class="pg" id="pg-errors">
+      <div class="sec"><div class="shdr"><span class="stitle">Error Summary</span><div class="sline"></div></div>
+        <div class="g4" id="err-cards"></div></div>
+      <div class="sec" style="margin-top:16px"><div class="shdr"><span class="stitle">Error Events</span><div class="sline"></div></div>
+        <div class="tc"><div class="th2"><span class="tt">Recent Errors</span><span id="err-cnt" style="font-size:10px;color:var(--mu)"></span></div>
+        <table><thead><tr><th>Time</th><th>Code</th><th>API</th><th>Partner</th><th>Message</th></tr></thead>
+        <tbody id="err-body"></tbody></table></div></div>
+    </div>
+
+    <!-- THROTTLE -->
+    <div class="pg" id="pg-throttle">
+      <div class="sec"><div class="shdr"><span class="stitle">Rate Limit Events</span><div class="sline"></div></div>
+        <div class="tc"><div class="th2"><span class="tt">Throttling Events</span><span id="thr-cnt" style="background:rgba(255,179,0,.1);color:var(--wn);padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700"></span></div>
+        <table><thead><tr><th>Time</th><th>API</th><th>Partner</th><th>Tier</th><th>Hits</th></tr></thead>
+        <tbody id="thr-body"></tbody></table></div></div>
+    </div>
+
+    <!-- MANAGE APIs -->
+    <div class="pg" id="pg-mapi">
+      <div class="g2">
+        <div class="sec"><div class="shdr"><span class="stitle">Create API</span><div class="sline"></div></div>
+          <div class="fp">
+            <div class="fr"><label class="fl">API Name</label><input class="fi" id="ma-n" placeholder="My API"/></div>
+            <div class="fr2">
+              <div class="fr" style="margin-bottom:0"><label class="fl">Context</label><input class="fi" id="ma-c" placeholder="/myapi"/></div>
+              <div class="fr" style="margin-bottom:0"><label class="fl">Version</label><input class="fi" id="ma-v" value="1.0.0"/></div>
+            </div>
+            <div class="fr"><label class="fl">Backend</label><input class="fi" id="ma-b" placeholder="http://localhost:9091/v1"/></div>
+            <div class="fr"><label class="fl">Tier</label><select class="fi" id="ma-t"><option>Gold</option><option>Silver</option><option>Bronze</option><option>Unlimited</option></select></div>
+            <button class="btn btn-p" onclick="createAPI()" style="width:100%">+ Create API</button>
+            <div id="ma-res" class="rb"></div>
+          </div>
+        </div>
+        <div class="sec"><div class="shdr"><span class="stitle">All APIs</span><div class="sline"></div></div>
+          <div class="tc"><div class="th2"><span class="tt">API Registry</span><span id="api-mc" style="font-size:10px;color:var(--mu)"></span></div>
+          <div id="api-ml"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANAGE PARTNERS -->
+    <div class="pg" id="pg-mpartner">
+      <div class="g2">
+        <div class="sec"><div class="shdr"><span class="stitle">Create Partner</span><div class="sline"></div></div>
+          <div class="fp">
+            <div class="fr"><label class="fl">Partner Name</label><input class="fi" id="mp-n" placeholder="MVNO Corp"/></div>
+            <div class="fr"><label class="fl">Tier</label><select class="fi" id="mp-t"><option>Gold</option><option>Silver</option><option>Bronze</option><option>Unlimited</option></select></div>
+            <div class="fr"><label class="fl">Subscribe to APIs</label><div style="display:flex;flex-direction:column;gap:5px;margin-top:3px" id="mp-apis"></div></div>
+            <button class="btn btn-p" onclick="createPartner()" style="width:100%;margin-top:6px">+ Create Partner</button>
+            <div id="mp-res" class="rb"></div>
+          </div>
+        </div>
+        <div class="sec"><div class="shdr"><span class="stitle">All Partners</span><div class="sline"></div></div>
+          <div class="tc"><div class="th2"><span class="tt">Partner Registry</span><span id="pt-mc" style="font-size:10px;color:var(--mu)"></span></div>
+          <div id="pt-ml"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCOPES -->
+    <div class="pg" id="pg-scopes">
+      <div class="sec"><div class="shdr"><span class="stitle">Scope Usage</span><div class="sline"></div></div>
+        <div class="g21">
+          <div class="tc"><div class="th2"><span class="tt">API Scopes</span></div><div id="sc-rows"></div></div>
+          <div class="cc"><div class="cc-t">Distribution</div><div class="cc-s">Calls per scope</div><canvas id="c-sc" height="220"></canvas></div>
+        </div></div>
+      <div class="g3" style="margin-top:14px">
+        <div class="card c-er"><div class="slbl">Scope Violations</div><div class="sval er" id="sc-403">0</div><div class="smt">403 Forbidden</div></div>
+        <div class="card c-wn"><div class="slbl">Invalid Tokens</div><div class="sval wn" id="sc-401">0</div><div class="smt">401 Unauthorized</div></div>
+        <div class="card c-gn"><div class="slbl">Auth Success</div><div class="sval gn" id="sc-ok">0%</div><div class="smt">Authenticated requests</div></div>
+      </div>
+    </div>
+
+    <!-- HEALTH -->
+    <div class="pg" id="pg-health">
+      <div class="g21">
+        <div class="tc"><div class="th2"><span class="tt">Service Health</span>
+          <button onclick="loadHealth()" style="background:transparent;border:1px solid var(--br);border-radius:5px;padding:3px 7px;color:var(--mu);font-size:10px;cursor:pointer">Check Now</button></div>
+          <div id="hlth-rows"><div class="spin"></div></div>
+        </div>
+        <div class="tc"><div class="th2"><span class="tt">Active Alerts</span>
+          <span id="a-badge" style="background:rgba(255,68,68,.1);color:var(--er);padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700"></span></div>
+          <div id="alrt-rows"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script>
+const API = 'http://localhost:4000/api';
+const CLR = ['#00D4FF','#7C5CFF','#00E676','#FFB300','#FF4444'];
+let range = '24h', charts = {}, sLog = [];
+let curToken = null, tokExp = 0, curPartner = null;
+
+// Partner scope presets
+const P_SCOPES = {
+  'mvno-partner-app':'plan:read networkread usage:read',
+  'telecom-test':'plan:read',
+  'dev-app':'networkread usage:read',
+  'internal':'plan:read networkread usage:read',
+};
+// API id map for quick select
+const QURL = { plan:'/plan/1.0.0/plans', network:'/network/1.0.0/network/status', usage:'/usage/1.0.0/usage/SUB-001' };
+
+const $  = id => document.getElementById(id);
+const fmt = n => n == null ? '0' : n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n);
+const tier = t => `<span class="tier t${t[0]}">${t}</span>`;
+
+const pgMeta = {
+  overview:    ['Usage Overview',        'Real-time API traffic and usage metrics'],
+  performance: ['Performance Analysis',  'Latency, throughput and API comparison'],
+  partners:    ['Partner Activity',      'Top consumers — updates instantly after requests'],
+  plans:       ['Plan Availability',     'Active telecom plans and subscriber data'],
+  regions:     ['Region Usage',          'Plan usage and API traffic by region'],
+  tester:      ['API Tester',            'Select partner → get token → send request'],
+  errors:      ['Error Analysis',        'Real HTTP errors from your test requests'],
+  throttle:    ['Throttling Events',     'Rate limit hits from your test requests'],
+  mapi:        ['Manage APIs',           'Create and manage API definitions'],
+  mpartner:    ['Manage Partners',       'Create partner apps and manage subscriptions'],
+  scopes:      ['Security & Scopes',     'OAuth2 scope usage from real requests'],
+  health:      ['System Health',         'Live service uptime and active alerts'],
+};
+
+function go(id, el) {
+  document.querySelectorAll('.pg').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
+  $('pg-'+id).classList.add('active');
+  if (el) el.classList.add('active');
+  const m = pgMeta[id]||['',''];
+  $('pgt').textContent = m[0]; $('pgs').textContent = m[1];
+  loadPg(id);
+}
+function setR(r, el) {
+  range = r;
+  document.querySelectorAll('.rtab').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  refresh();
+}
+function refresh() {
+  const a = document.querySelector('.pg.active');
+  if (a) loadPg(a.id.replace('pg-',''));
+}
+
+async function api(p) {
+  try { return await (await fetch(`${API}${p}`)).json(); } catch { return null; }
+}
+async function post(p, b) {
+  try {
+    const r = await fetch(`${API}${p}`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b) });
+    return r.json();
+  } catch(e) { return {error:e.message}; }
+}
+async function del(p) {
+  try { return await (await fetch(`${API}${p}`,{method:'DELETE'})).json(); } catch { return null; }
+}
+
+function showR(id, msg, cls) {
+  const e=$(id); e.textContent=msg; e.className=`rb ${cls}`; e.style.display='block';
+}
+
+function card(lbl, val, meta, icon, cls, vcls) {
+  return `<div class="card ${cls||''}"><div class="sic">${icon||''}</div>
+    <div class="slbl">${lbl}</div><div class="sval ${vcls||''}">${val}</div><div class="smt">${meta||''}</div></div>`;
+}
+
+function loadPg(id) {
+  switch(id) {
+    case 'overview':    loadOv(); break;
+    case 'performance': loadPerf(); break;
+    case 'partners':    loadPart(); break;
+    case 'plans':       loadPlans(); break;
+    case 'regions':     loadRegions(); break;
+    case 'tester':      updTesterStats(); break;
+    case 'errors':      loadErrors(); break;
+    case 'throttle':    loadThrottle(); break;
+    case 'mapi':        loadMAPI(); break;
+    case 'mpartner':    loadMPartner(); break;
+    case 'scopes':      loadScopes(); break;
+    case 'health':      loadHealth(); break;
+  }
+}
+
+// ── OVERVIEW ─────────────────────────────────────────────────────────────────
+async function loadOv() {
+  const [ov, ts, apis] = await Promise.all([
+    api(`/overview?range=${range}`),
+    api('/timeseries'),
+    api(`/apis?range=${range}`),
+  ]);
+  if (!ov) return;
+  $('ov-cards').innerHTML = [
+    card('Total Requests', fmt(ov.totalRequests), `Peak ${ov.peakRps} req`, '📊', '', 'ac'),
+    card('Error Count',    fmt(ov.totalErrors),   `${ov.errorRate}% rate`,  '⚠️', 'c-er', 'er'),
+    card('Throttled',      fmt(ov.throttled),      'Rate limit hits',        '🚦', 'c-wn', 'wn'),
+    card('Avg Latency',    ov.avgLatency?`${ov.avgLatency}ms`:'—', `p95: ${ov.p95Latency?ov.p95Latency+'ms':'—'}`, '⚡', 'c-gn', 'gn'),
+    card('Success Rate',   `${ov.successRate}%`, 'All APIs',                 '✅', 'c-gn'),
+    card('Active APIs',    ov.activeApis,          'Published',              '🔌', 'c-pu'),
+    card('Partners',       ov.activePartners,      'Applications',           '👥', 'c-pu'),
+    card('Data Source',    ov.dataSource==='wso2'?'WSO2':'Log', ov.dataSource==='wso2'?'Real WSO2 data':'From request log', '📡'),
+  ].join('');
+  if (ts && window.Chart) drawTS(ts);
+  if (apis) renderAPIRows(apis);
+}
+
+function renderAPIRows(apis) {
+  $('api-rows').innerHTML = apis.map((a,i) => {
+    const sr = a.successRate||0;
+    const bc = sr>=97?'b-ok':sr>=90?'b-wn':'b-er', bs = sr>=97?'HEALTHY':sr>=90?'DEGRADED':'CRITICAL';
+    return `<div class="ar">
+      <div class="adot" style="background:${CLR[i]}"></div>
+      <div style="flex:1;min-width:0">
+        <div class="an">${a.name}</div>
+        <div class="ac2">${a.context}/v${a.version}</div>
+      </div>
+      <div class="as">
+        <div><div class="av" style="color:${CLR[i]}">${fmt(a.requests)}</div><div class="al">REQUESTS</div></div>
+        <div><div class="av" style="color:var(--er)">${a.errors||0}</div><div class="al">ERRORS</div></div>
+        <div><div class="av">${a.avgLatency?a.avgLatency+'ms':'—'}</div><div class="al">AVG LAT</div></div>
+        <div><div class="av" style="color:var(--wn)">${a.throttled||0}</div><div class="al">THROTTLED</div></div>
+      </div>
+      <span class="badge ${bc}">${bs}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── PERFORMANCE ───────────────────────────────────────────────────────────────
+async function loadPerf() {
+  const apis = await api(`/apis?range=${range}`);
+  if (!apis || !window.Chart) return;
+  const labels = apis.map(a => a.name.replace(' API','').replace(' Status',''));
+  mkChart('c-req','bar',{labels,datasets:[{label:'Requests',data:apis.map(a=>a.requests||0),backgroundColor:CLR,borderRadius:5}]});
+  mkChart('c-lat','bar',{labels,datasets:[
+    {label:'Avg (ms)',data:apis.map(a=>a.avgLatency||0),backgroundColor:'rgba(0,212,255,.7)',borderRadius:5},
+    {label:'p95 (ms)',data:apis.map(a=>a.p95Latency||0),backgroundColor:'rgba(124,92,255,.7)',borderRadius:5},
+  ]});
+  mkChart('c-err','bar',{labels,datasets:[
+    {label:'Success %',data:apis.map(a=>a.successRate||0),backgroundColor:'rgba(0,230,118,.6)',borderRadius:5},
+    {label:'Error %',  data:apis.map(a=>a.errorRate||0),  backgroundColor:'rgba(255,68,68,.6)', borderRadius:5},
+  ]});
+}
+
+// ── PARTNERS ──────────────────────────────────────────────────────────────────
+async function loadPart() {
+  const data = await api('/partners');
+  if (!data) return;
+  const max = Math.max(...data.map(p=>p.requests), 1);
+  $('pcnt').textContent = `${data.length} partners`;
+  $('ptbody').innerHTML = data.map((p,i) => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:7px">
+        <div style="width:20px;height:20px;border-radius:50%;background:${CLR[i%3]};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#000;flex-shrink:0">${p.name[0]}</div>
+        <div><div style="font-size:11px;font-weight:600">${p.name}</div><div class="mono" style="color:var(--mu)">${p.id}</div></div>
+      </div></td>
+      <td>${tier(p.tier)}</td>
+      <td><div class="mono" style="font-weight:700;color:${p.requests>0?CLR[i%3]:'var(--mu)'}">${p.requests}</div>
+          <div class="pb"><div class="pf" style="width:${(p.requests/max*100).toFixed(0)}%;background:${CLR[i%3]}"></div></div></td>
+      <td><span class="mono" style="color:${p.errors>0?'var(--er)':'var(--mu)'}">${p.errors}</span></td>
+      <td><span class="mono" style="color:${p.throttled>0?'var(--wn)':'var(--mu)'}">${p.throttled}</span></td>
+      <td><span class="mono" style="color:var(--ac2)">${p.tokenCalls}</span></td>
+      <td><span style="font-size:10px;color:var(--mu)">${new Date(p.lastActive).toLocaleTimeString()}</span></td>
+    </tr>`).join('');
+  if (window.Chart) {
+    mkChart('c-part','bar',{
+      labels:data.map(p=>p.name),
+      datasets:[{label:'Requests',data:data.map(p=>p.requests||0),backgroundColor:data.map((_,i)=>CLR[i%3]),borderRadius:5}]
+    },{indexAxis:'y'});
+  }
+}
+
+// ── PLANS ─────────────────────────────────────────────────────────────────────
+async function loadPlans() {
+  const d = await api('/plans/availability');
+  if (!d) return;
+  const {plans, summary} = d;
+  $('pl-sum').innerHTML = [
+    card('Total Plans', summary.totalPlans,     'Plan types', '📋', '', 'ac'),
+    card('Active',      summary.activePlans,    'Published',  '✅', 'c-gn', 'gn'),
+    card('Real Calls',  summary.realCallCount,  'Plan API calls from tester', '📊', 'c-pu', 'ac'),
+    card('Top Plan',    summary.topPlanByUsage, 'By usage',   '🏆', 'c-wn'),
+  ].join('');
+  $('pl-cards').innerHTML = plans.map(p => `
+    <div class="pc">
+      <div class="pt pt-${p.type}">${p.type.toUpperCase()}</div>
+      <div class="pn">${p.name}</div>
+      <div class="pp">$${p.price}/mo</div>
+      <div class="pm">📦 ${p.dataGB}GB · 📞 ${p.voiceMin>0?p.voiceMin+'min':'—'}</div>
+      <div class="pm" style="margin-bottom:7px">🌍 ${p.regions.join(', ')}</div>
+      <div style="font-size:11px;color:var(--mu)">${p.callsToday} API calls today</div>
+    </div>`).join('');
+  if (window.Chart) {
+    const types = {}; plans.forEach(p => { types[p.type]=(types[p.type]||0)+1; });
+    mkChart('c-ptype','doughnut',{
+      labels:Object.keys(types).map(t=>t.charAt(0).toUpperCase()+t.slice(1)),
+      datasets:[{data:Object.values(types),backgroundColor:CLR,borderWidth:0,hoverOffset:6}]
+    },{scales:{},plugins:{legend:{position:'bottom',labels:{color:'#4A6A8A',font:{size:10},padding:8}}}});
+    mkChart('c-pcalls','bar',{
+      labels:plans.map(p=>p.name.split(' ')[0]+' '+p.name.split(' ')[1]),
+      datasets:[{label:'Calls',data:plans.map(p=>p.callsToday||0),backgroundColor:CLR,borderRadius:5}]
+    });
+  }
+}
+
+// ── REGIONS ───────────────────────────────────────────────────────────────────
+async function loadRegions() {
+  const d = await api('/regions');
+  if (!d) return;
+  const {regions} = d;
+  $('rg-sum').innerHTML = [
+    card('Top Region',      'North America', 'Highest traffic', '🌏', 'c-pu', 'ac'),
+    card('Fastest Growing', 'Africa',        '+31% growth',     '🚀', 'c-gn', 'gn'),
+  ].join('');
+  $('rg-cards').innerHTML = regions.map(r => `
+    <div class="rc">
+      <div class="rn">${r.region}</div>
+      <div class="rs ${r.status==='operational'?'rs-op':'rs-dg'}">
+        <div class="dot" style="background:${r.status==='operational'?'var(--gn)':'var(--wn)'};box-shadow:none;width:4px;height:4px"></div>
+        ${r.status.toUpperCase()}
+      </div>
+      <div style="font-size:9px;color:var(--mu);margin-bottom:5px">Plan mix</div>
+      <div class="sb-bar">
+        <div style="flex:${r.prepaidPct};background:var(--ac)"></div>
+        <div style="flex:${r.postpaidPct};background:var(--ac2)"></div>
+        <div style="flex:${r.wholesalePct};background:var(--wn)"></div>
+        <div style="flex:${r.iotPct};background:var(--gn)"></div>
+      </div>
+      <div style="display:flex;gap:7px;font-size:9px;margin-bottom:8px">
+        <span style="color:var(--ac)">■ ${r.prepaidPct}% pre</span>
+        <span style="color:var(--ac2)">■ ${r.postpaidPct}% post</span>
+        <span style="color:var(--wn)">■ ${r.wholesalePct}% whl</span>
+        <span style="color:var(--gn)">■ ${r.iotPct}% IoT</span>
+      </div>
+      <div style="font-size:11px">Top: <b>${r.topPlan}</b> · <span style="color:var(--gn)">${r.growth}</span></div>
+      <div style="font-size:10px;color:var(--mu)">${r.apiCalls} API calls</div>
+    </div>`).join('');
+  if (window.Chart) {
+    mkChart('c-reg','bar',{
+      labels:regions.map(r=>r.region),
+      datasets:[{label:'API Calls',data:regions.map(r=>r.apiCalls||0),backgroundColor:CLR,borderRadius:5}]
+    },{indexAxis:'y'});
+  }
+}
+
+// ── TOKEN & PARTNER SELECT ───────────────────────────────────────────────────
+function onPS(v) {
+  curPartner = v || null;
+  curToken = null; tokExp = 0;
+  if (v && P_SCOPES[v]) $('t-scope').value = P_SCOPES[v];
+  const b = $('tok-badge');
+  b.textContent = v ? $('t-partner').options[$('t-partner').selectedIndex].text.split('(')[0].trim().toUpperCase() : 'NO TOKEN';
+  b.style.background = 'rgba(74,106,138,.12)'; b.style.color = 'var(--mu)';
+  $('tok-prev').style.display = 'none';
+  $('tok-res').style.display = 'none';
+}
+
+async function fetchTok() {
+  const ck = $('t-ck').value.trim(), cs = $('t-cs').value.trim(), sc = $('t-scope').value.trim();
+  if (!ck || !cs) { showR('tok-res','❌ Enter Consumer Key and Secret','fail'); return; }
+  const btn = $('tok-btn'); btn.textContent = '⏳ Fetching...'; btn.disabled = true;
+  const d = await post('/fetch-token', { clientId:ck, clientSecret:cs, scope:sc });
+  btn.textContent = '🔑 Get Token Automatically'; btn.disabled = false;
+  if (d && d.success) {
+    curToken = d.access_token; tokExp = Date.now()+(d.expires_in-60)*1000;
+    const pname = curPartner ? $('t-partner').options[$('t-partner').selectedIndex].text.split('(')[0].trim() : 'Unknown';
+    const b = $('tok-badge'); b.textContent = `✓ ${pname.toUpperCase()}`; b.style.background='rgba(0,230,118,.12)'; b.style.color='var(--gn)';
+    $('tok-prev').style.display='block';
+    $('tok-prev').innerHTML = `<span style="color:var(--gn)">✓ Token ready</span> · <span style="color:var(--wn)">${pname}</span> · ${Math.round(d.expires_in/60)}min<br><span style="color:var(--ac2)">${sc}</span><br><span style="opacity:.5">${curToken.substring(0,80)}...</span>`;
+    showR('tok-res',`✅ Token for ${pname}! Valid ${Math.round(d.expires_in/60)} min.`,'ok');
+  } else {
+    showR('tok-res',`❌ ${(d&&d.error)||'Token failed — check Consumer Key/Secret'}`,'fail');
+    curToken=null;
+    const b=$('tok-badge'); b.textContent='FAILED'; b.style.background='rgba(255,68,68,.12)'; b.style.color='var(--er)';
+  }
+}
+
+// ── SEND REQUEST ──────────────────────────────────────────────────────────────
+function prefill(v) {
+  if (!v || v==='custom') return;
+  $('t-url').value = $('t-gw').value + QURL[v];
+}
+function updUrl() {
+  const v = $('t-api').value;
+  if (v && v!=='custom') $('t-url').value = $('t-gw').value + QURL[v];
+}
+
+async function sendReq() {
+  const url = $('t-url').value.trim(), method = $('t-mth').value;
+  const apiId = $('t-api').value || 'custom';
+  if (!url) { showR('t-res','URL required','fail'); return; }
+  if (curToken && Date.now() >= tokExp) {
+    showR('t-res','⚠️ Token expired — get a new one','fail');
+    const b=$('tok-badge'); b.textContent='EXPIRED'; b.style.color='var(--wn)'; return;
+  }
+  const btn=$('send-btn'); btn.textContent='⏳ Sending...'; btn.disabled=true;
+  const res = await post('/test-request',{ method, url, token:curToken||null, apiId, partnerId:curPartner });
+  btn.textContent='▶ Send Request'; btn.disabled=false;
+  if (!res) { showR('t-res','Backend not reachable — is node src/server.js running?','fail'); return; }
+  const cls = res.success?'ok':res.status>=400?'fail':'info';
+  const pname = curPartner?` [${$('t-partner').options[$('t-partner').selectedIndex].text.split('(')[0].trim()}]`:'';
+  showR('t-res',`${res.status||'ERR'} — ${res.message} · ${res.responseTime}ms${curToken?' (token)':' (no token)'}${pname}`,cls);
+  // Add to session log
+  sLog.unshift({
+    method, url, status:res.status||0, time:res.responseTime||0,
+    success:res.success, ts:new Date().toLocaleTimeString(),
+    hasToken:!!curToken, partner:curPartner,
+    pname: curPartner?$('t-partner').options[$('t-partner').selectedIndex].text.split('(')[0].trim():'—',
+  });
+  if (sLog.length>100) sLog.pop();
+  renderLog(); updTesterStats();
+  // Immediate refresh of visible stats
+  immediateRefresh();
+}
+
+function immediateRefresh() {
+  // Update badge counts
+  const e4xx = sLog.filter(r=>r.status===401||r.status===403||r.status===404).length;
+  const e429 = sLog.filter(r=>r.status===429).length;
+  $('ebadge').textContent = e4xx + e429;
+  // If on partners page — refresh immediately
+  const ap = document.querySelector('.pg.active');
+  if (ap && ap.id==='pg-partners') loadPart();
+  if (ap && ap.id==='pg-overview')  loadOv();
+  if (ap && ap.id==='pg-errors')    loadErrors();
+  if (ap && ap.id==='pg-scopes')    loadScopes();
+}
+
+function renderLog() {
+  $('log-cnt').textContent = `${sLog.length} requests`;
+  if (!sLog.length) { $('req-log').innerHTML='<div style="padding:18px;text-align:center;color:var(--mu);font-size:11px">No requests yet</div>'; return; }
+  $('req-log').innerHTML = sLog.map(r => {
+    const sc = r.status>=500?'s5xx':r.status>=400?'s4xx':r.status>0?'s2xx':'s0';
+    return `<div class="rrow">
+      <span class="rm">${r.method}</span>
+      <span class="ru" title="${r.url}">${r.url}</span>
+      <span class="rp">${r.pname||'—'}</span>
+      <span class="rs2 ${sc}">${r.status||'ERR'}</span>
+      <span class="rt">${r.time}ms</span>
+      <span style="font-size:9px;color:var(--mu)">${r.ts}</span>
+    </div>`;
+  }).join('');
+}
+
+function updTesterStats() {
+  const tot=sLog.length, ok=sLog.filter(r=>r.success).length, fail=tot-ok;
+  const avg=tot?Math.round(sLog.reduce((s,r)=>s+r.time,0)/tot):0;
+  const upd=(id,v)=>{ const e=$(id); e.textContent=v; e.classList.remove('ca'); void e.offsetWidth; e.classList.add('ca'); };
+  upd('ts-tot',tot); upd('ts-ok',ok); upd('ts-fail',fail);
+  $('ts-lat').textContent = tot?`${avg}ms`:'—';
+}
+
+function clearLog() { sLog=[]; renderLog(); updTesterStats(); }
+
+// ── ERRORS ────────────────────────────────────────────────────────────────────
+async function loadErrors() {
+  const d = await api('/errors');
+  if (!d) return;
+  const codes={};
+  d.forEach(e=>{ if(e.code!=='—'&&e.code!=='FAULT') codes[e.code]=(codes[e.code]||0)+1; });
+  const cnames={401:'Unauthorized',403:'Forbidden',404:'Not Found',429:'Rate Limited',500:'Server Error',503:'Unavailable'};
+  $('err-cards').innerHTML = Object.entries(codes).map(([c,n])=>
+    `<div class="card c-er"><div class="ecode e${c}">${c}</div><div style="font-family:monospace;font-size:20px;font-weight:700;margin-top:2px">${n}</div><div class="smt">${cnames[c]||c}</div></div>`).join('');
+  $('err-cnt').textContent=`${d.length} errors`;
+  $('ebadge').textContent=d.filter(e=>e.code!=='—').length;
+  $('err-body').innerHTML=d.slice(0,15).map(e=>`
+    <tr>
+      <td><span class="mono" style="color:var(--mu)">${new Date(e.timestamp).toLocaleTimeString()}</span></td>
+      <td><span class="ecode e${e.code}" style="font-size:13px">${e.code}</span></td>
+      <td>${e.api}</td><td>${e.partner}</td>
+      <td><span style="font-size:10px;color:var(--mu)">${e.message}</span></td>
+    </tr>`).join('');
+}
+
+// ── THROTTLING ────────────────────────────────────────────────────────────────
+async function loadThrottle() {
+  const d = await api('/throttling');
+  if (!d) return;
+  $('thr-cnt').textContent=`${d.length} events`;
+  $('thr-body').innerHTML=d.map(e=>`
+    <tr>
+      <td><span class="mono" style="color:var(--mu)">${new Date(e.timestamp).toLocaleTimeString()}</span></td>
+      <td>${e.api}</td><td>${e.partner}</td>
+      <td>${tier(e.tier==='—'?'Bronze':e.tier)}</td>
+      <td><span class="mono" style="color:var(--wn);font-weight:700">${e.count}</span></td>
+    </tr>`).join('');
+}
+
+// ── SCOPES ────────────────────────────────────────────────────────────────────
+async function loadScopes() {
+  const d = await api('/scopes');
+  if (!d) return;
+  const max = Math.max(...d.map(s=>s.calls),1);
+  $('sc-rows').innerHTML=d.map(s=>`
+    <div class="scrow">
+      <div class="scn">${s.scope}</div>
+      <div class="scb"><div class="pb"><div class="pf" style="width:${(s.calls/max*100).toFixed(0)}%;background:linear-gradient(90deg,#7C5CFF,#00D4FF)"></div></div></div>
+      <div class="scc">${s.calls}</div>
+    </div>`).join('');
+  const tot=sLog.length, ok=sLog.filter(r=>r.success).length;
+  $('sc-403').textContent=sLog.filter(r=>r.status===403).length;
+  $('sc-401').textContent=sLog.filter(r=>r.status===401).length;
+  $('sc-ok').textContent=tot?`${((ok/tot)*100).toFixed(1)}%`:'0%';
+  if (window.Chart) {
+    mkChart('c-sc','doughnut',{
+      labels:d.map(s=>s.scope),
+      datasets:[{data:d.map(s=>s.calls||0),backgroundColor:CLR,borderWidth:0,hoverOffset:6}]
+    },{scales:{},plugins:{legend:{position:'bottom',labels:{color:'#4A6A8A',font:{size:9},padding:6}}}});
+  }
+}
+
+// ── HEALTH ────────────────────────────────────────────────────────────────────
+async function loadHealth() {
+  const [h,a] = await Promise.all([api('/health'),api('/alerts')]);
+  const allUp = (h||[]).every(s=>s.status==='UP');
+  $('sysst').textContent = allUp?'All systems operational':'Service degraded';
+  $('hlth-rows').innerHTML=(h||[]).map(s=>`
+    <div class="hr">
+      <div><div style="font-size:11px;font-weight:500">${s.name}</div><div class="mono" style="color:var(--mu)">${s.url}</div></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        ${s.latency?`<span class="mono" style="color:var(--mu)">${s.latency}ms</span>`:''}
+        <div class="hs ${s.status.toLowerCase()}">
+          <div class="dot" style="background:${s.status==='UP'?'var(--gn)':'var(--er)'};box-shadow:0 0 4px ${s.status==='UP'?'var(--gn)':'var(--er)'}"></div>
+          ${s.status}
+        </div>
+      </div>
+    </div>`).join('');
+  if (a) {
+    $('a-badge').textContent=a.length;
+    $('alrt-rows').innerHTML=a.map(al=>`
+      <div class="arow"><div class="adtl a${al.type}"></div>
+      <div><div class="amsg">${al.message}</div><div class="amt">${al.api} · ${al.time}</div></div></div>`).join('');
+  }
+}
+
+// ── MANAGE APIs ───────────────────────────────────────────────────────────────
+async function loadMAPI() {
+  const d = await api('/manage/apis');
+  if (!d) return;
+  $('api-mc').textContent=`${d.length} APIs`;
+  $('api-ml').innerHTML=d.map(a=>`
+    <div class="mr">
+      <div style="flex:1"><div class="mname">${a.name} <span class="sp ${a.status==='PUBLISHED'?'sp-pub':'sp-cre'}">${a.status}</span></div>
+        <div class="mmeta">${a.context}/v${a.version} → ${a.backend}</div>
+        <div style="font-size:9px;color:var(--mu)">${a.tier} · ${new Date(a.created).toLocaleDateString()}</div>
+      </div>
+      <button class="btn btn-d" onclick="delAPI('${a.id}')">Delete</button>
+    </div>`).join('');
+}
+async function createAPI() {
+  const n=$('ma-n').value.trim(),c=$('ma-c').value.trim(),v=$('ma-v').value.trim(),b=$('ma-b').value.trim(),t=$('ma-t').value;
+  if(!n||!c||!b){showR('ma-res','Name, context, backend required','fail');return;}
+  const r=await post('/manage/apis',{name:n,context:c,version:v,backend:b,tier:t});
+  if(r&&r.success){showR('ma-res',`✅ ${r.message}`,'ok');$('ma-n').value='';$('ma-c').value='';$('ma-b').value='';setTimeout(loadMAPI,300);}
+  else showR('ma-res',`❌ ${r&&r.error||'Failed'}`,'fail');
+}
+async function delAPI(id){if(!confirm(`Delete API "${id}"?`))return;await del(`/manage/apis/${id}`);loadMAPI();}
+
+// ── MANAGE PARTNERS ───────────────────────────────────────────────────────────
+async function loadMPartner() {
+  const [ps, as] = await Promise.all([api('/manage/partners'),api('/manage/apis')]);
+  if (!ps) return;
+  if (as) $('mp-apis').innerHTML=as.map(a=>`
+    <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:11px">
+      <input type="checkbox" value="${a.id}" style="accent-color:var(--ac)"> ${a.name}
+    </label>`).join('');
+  $('pt-mc').textContent=`${ps.length} partners`;
+  $('pt-ml').innerHTML=ps.map(p=>`
+    <div class="mr">
+      <div style="flex:1"><div class="mname">${p.name} ${tier(p.tier)}</div>
+        <div class="mmeta">App: ${p.appId}</div>
+        <div style="font-size:9px;color:var(--mu)">${p.apis&&p.apis.length?p.apis.join(', '):'No APIs'} · ${new Date(p.created).toLocaleDateString()}</div>
+      </div>
+      <button class="btn btn-d" onclick="delPart('${p.id}')">Delete</button>
+    </div>`).join('');
+}
+async function createPartner() {
+  const n=$('mp-n').value.trim(), t=$('mp-t').value;
+  const as=[...document.querySelectorAll('#mp-apis input:checked')].map(c=>c.value);
+  if(!n){showR('mp-res','Name required','fail');return;}
+  const r=await post('/manage/partners',{name:n,tier:t,apis:as});
+  if(r&&r.success){showR('mp-res',`✅ ${r.message}`,'ok');$('mp-n').value='';document.querySelectorAll('#mp-apis input').forEach(c=>c.checked=false);setTimeout(loadMPartner,300);}
+  else showR('mp-res',`❌ ${r&&r.error||'Failed'}`,'fail');
+}
+async function delPart(id){if(!confirm(`Delete "${id}"?`))return;await del(`/manage/partners/${id}`);loadMPartner();}
+
+// ── CHARTS ────────────────────────────────────────────────────────────────────
+const CD = {
+  responsive:true,
+  plugins:{legend:{labels:{color:'#4A6A8A',font:{size:10}}}},
+  scales:{
+    x:{ticks:{color:'#4A6A8A',font:{size:9}},grid:{color:'rgba(22,32,48,1)'}},
+    y:{ticks:{color:'#4A6A8A',font:{size:9}},grid:{color:'rgba(22,32,48,1)'},beginAtZero:true},
+  }
+};
+function mkChart(id,type,data,opts) {
+  if(charts[id]) charts[id].destroy();
+  const ctx=$(id); if(!ctx) return;
+  charts[id]=new Chart(ctx,{type,data,options:Object.assign({},CD,opts||{})});
+}
+function drawTS(ts) {
+  mkChart('c-traffic','line',{
+    labels:ts.map((_,i)=>i%Math.max(1,Math.floor(ts.length/6))===0?new Date(ts[i].t).toLocaleTimeString():''),
+    datasets:[
+      {label:'Requests',data:ts.map(p=>p.requests),borderColor:'#00D4FF',backgroundColor:'rgba(0,212,255,.07)',fill:true,tension:.4,pointRadius:0,borderWidth:2},
+      {label:'Errors',  data:ts.map(p=>p.errors),  borderColor:'#FF4444',backgroundColor:'rgba(255,68,68,.05)', fill:true,tension:.4,pointRadius:0,borderWidth:2},
+    ]
+  });
+}
+
+// ── CHART.JS LOADER ───────────────────────────────────────────────────────────
+function loadChartJS(cb) {
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+  s.onload=()=>cb(true);
+  s.onerror=()=>{
+    const s2=document.createElement('script');
+    s2.src='https://unpkg.com/chart.js@4.4.0/dist/chart.umd.min.js';
+    s2.onload=()=>cb(true); s2.onerror=()=>cb(false);
+    document.head.appendChild(s2);
+  };
+  document.head.appendChild(s);
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadChartJS(ok => {
+  if(!ok) console.warn('Chart.js unavailable — charts disabled');
+  loadOv();
+  loadHealth();
+  setInterval(refresh, 30000); // auto-refresh every 30s
+});
+</script>
+</body>
+</html>
